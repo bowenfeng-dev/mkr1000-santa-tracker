@@ -7,8 +7,14 @@ dest = []
 
 for dest_json in data['destinations']:
     dest.append({
+        'arrival': dest_json['arrival'],
+        'departure': dest_json['departure'],
         'city': dest_json['city'],
         'location': dest_json['location']
         })
 
-print(json.dumps(dest, indent=2))
+
+def arrival(d):
+    return d['arrival']
+
+print(json.dumps(sorted(dest, key=arrival), indent=2))
