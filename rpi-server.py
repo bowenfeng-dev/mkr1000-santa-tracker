@@ -1,7 +1,19 @@
+from flask import Flask
+import requests
 import json
 import math
 import sys
 
+
+app = Flask(__name__)
+
+# Google's Santa API. Only updates on Dec 24.
+# santa_api_url = 'https://santa-api.appspot.com/info?client=web&language=en&fingerprint=&routeOffset=0&streamOffset=0'
+
+# My Fake Santa API.
+santa_api_url = 'http://localhost:1224/info'
+
+# LEDs metadata.
 leds = [
     {'name': 'North Pole', 'location': {'lat': 90.0, 'lng': 30.0}},
     {'name': 'Alaska (US)', 'location': {'lat': 64.536117, 'lng': -151.258768}},
@@ -35,6 +47,28 @@ leds = [
 ]
 
 
+@app.route('/santa')
+def santa():
+    santa_info = requests.get(santa_api_url).json()
+    santa_time = santa_info['now']
+
+    response = []
+
+    for dest_json in santa_info['destinations']:
+        if santa_time < dest_json['arrival']:
+            break
+
+        dist, led, led_index = closest_led(dest_json['location'])
+        response.append({
+            'index': led_index,
+            'distance': dist,
+            'city': dest_json['city'],
+            'presents': dest_json['presentsDelivered']
+        })
+
+    return app.response_class(json.dumps(response), content_type='application/json')
+
+
 def distance(loc1, loc2, unit='M'):
     lat1 = loc1['lat']
     lng1 = loc1['lng']
@@ -62,31 +96,17 @@ def distance(loc1, loc2, unit='M'):
 def closest_led(loc):
     min_dist = sys.float_info.max
     min_led = None
-    for led in leds:
+    min_index = 0
+    for index, led in enumerate(leds):
         led_loc = led['location']
         dist = distance(loc, led_loc)
         if dist < min_dist:
             min_dist = dist
             min_led = led
-    return min_dist,min_led
+            min_index = index
+    return min_dist, min_led, min_index
 
 
-
-with open('santa2016.json') as data_file:
-    data = json.load(data_file)
-
-dest = []
-
-for dest_json in data['destinations']:
-    # dest.append({
-    #     'city': dest_json['city'],
-    #     'location': dest_json['location']
-    #     })
-    dist, led = closest_led(dest_json['location'])
-    print u'city:{0} loc:{1} led:{2} led-loc:{3} dist:{4}'.format(
-        dest_json['city'],
-        dest_json['location'],
-        led['name'],
-        led['location'],
-        dist)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=2412)
 
