@@ -60,13 +60,13 @@ def santa():
 
         dist, led, led_index = closest_led(dest_json['location'])
         response.append({
-            'index': led_index,
-            'distance': dist,
-            'city': dest_json['city'],
-            'presents': dest_json['presentsDelivered']
+            'i': led_index,
+            'd': int(dist),
+            'n': dest_json['city'],
+            'p': dest_json['presentsDelivered']
         })
 
-    return app.response_class(json.dumps(response), content_type='application/json')
+    return app.response_class(json.dumps(response).replace(' ',''), content_type='application/json')
 
 
 def distance(loc1, loc2, unit='M'):
