@@ -1,6 +1,6 @@
-
 #include <SPI.h>
 #include <WiFi101.h>
+#include <ctime>
 #include <Adafruit_NeoPixel.h>
 #include "JsonStreamingParser.h"
 #include "JsonListener.h"
@@ -11,9 +11,9 @@
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_NUM, LED_PIN, NEO_GRB + NEO_KHZ800);
 
-char ssid[] = "YOUR_SSID";     //  your network SSID (name)
-char pass[] = "YOUR_PWRD";  // your network password
-int keyIndex = 0;            // your network key Index number (needed only for WEP)
+char ssid[] = "YOUR_SSID";    //  your network SSID (name)
+char pass[] = "YOUR_PWRD";    // your network password
+int keyIndex = 0;             // your network key Index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
 IPAddress server(192, 168, 1, 120);  // numeric IP for RPI server
@@ -127,6 +127,10 @@ void ensureConnected() {
   }
 }
 
+uint32_t randomColor() {
+  return strip.Color(rand() % 255, rand() % 255, rand() % 255);
+}
+
 void fetchSantaInfo() {
   ensureConnected();
 
@@ -170,7 +174,20 @@ void fetchSantaInfo() {
   Serial.println(" Bytes.");
 }
 
+void updateLeds() {
+  for (int i = 0; i < 30; ++i) {
+    if (leds[i].on) {
+      strip.setPixelColor(i, randomColor());
+    } else {
+      strip.setPixelColor(i, strip.Color(0, 0, 0));
+    }
+  }
+  strip.show();
+}
+
 void flashLastLed() {
+  updateLeds();
+
   strip.setPixelColor(ledSwitcher.lastLed(), strip.Color(0, 0, 0));
   strip.show();
   delay(500);
@@ -182,6 +199,8 @@ void flashLastLed() {
 void setup() {
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
+
+  srand(time(NULL)); //Initialize random seed so we can generate random colors.
   
   strip.setBrightness(BRIGHTNESS);
   strip.begin();
@@ -190,13 +209,7 @@ void setup() {
   connectToWifi();
   fetchSantaInfo();
 
-  for (int i = 0; i < 30; ++i) {
-    if (leds[i].on) {
-      strip.setPixelColor(i, strip.Color(255, 0, 0));
-    } else {
-      strip.setPixelColor(i, strip.Color(0, 0, 0));
-    }
-  }
+  updateLeds();
   strip.show();
 }
 
@@ -207,7 +220,6 @@ void loop() {
     flashLastLed();
   }
 }
-
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
@@ -225,4 +237,6 @@ void printWifiStatus() {
   Serial.print(rssi);
   Serial.println(" dBm");
 }
+
+
 
